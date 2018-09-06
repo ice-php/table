@@ -1,0 +1,48 @@
+{
+  "name": "ice-php/table",
+  "description": "对数据库请求进行封装",
+  "keywords": [
+    "icePHP",
+    "table"
+  ],
+  "homepage": "https://github.com/ice-php/table",
+  "type": "composer",
+  "license": "MIT",
+  "support": {
+    "source": "https://github.com/ice-php/table"
+  },
+  "authors": [
+    {
+      "name": "blueice",
+      "email": "liyong@nenu.edu.cn"
+    }
+  ],
+  "require": {
+    "php": ">=7.1.0",
+    "ice-php/mysql": "dev-master",
+    "ice-php/config": "dev-master",
+    "ice-php/filelog": "dev-master",
+    "ice-php/functions": "dev-master",
+    "ice-php/debug": "dev-master",
+    "ice-php/cache": "dev-master",
+    "ice-php/mongo": "dev-master"
+  },
+  "minimum-stability": "dev",
+  "autoload": {
+    "files": [
+      "src/functions.php"
+    ],
+    "psr-4": {
+      "icePHP\\": "src"
+    }
+  },
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://packagist.org"
+    }
+  },
+  "config": {
+    "process-timeout": 1800
+  }
+}
