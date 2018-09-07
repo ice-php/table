@@ -60,7 +60,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
             $where[$linkField] = $key;
 
             // 关联表查询结果
-            $linkRow = $table->getRow($this->append($fields, $linkField), $where);
+            $linkRow = $table->row($this->append($fields, $linkField), $where);
         }
 
         // 如果未能对应

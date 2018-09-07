@@ -250,7 +250,7 @@ abstract class Record
     private function loadByData(): Record
     {
         $this->_loaded = true;
-        $this->_data = $this->_table->getRow('*', self::dataForWrite())->toArray();
+        $this->_data = $this->_table->row('*', self::dataForWrite())->toArray();
         return $this;
     }
 
@@ -263,7 +263,7 @@ abstract class Record
     private function loadByPk($pk): Record
     {
         $this->_loaded = true;
-        $this->_data = $this->_table->getRow('*', [$this->_primaryKey => $pk])->toArray();
+        $this->_data = $this->_table->row('*', [$this->_primaryKey => $pk])->toArray();
         return $this;
     }
 
@@ -276,7 +276,7 @@ abstract class Record
     private function loadByWhere(array $where): Record
     {
         $this->_loaded = true;
-        $this->_data = $this->_table->getRow('*', $where)->toArray();
+        $this->_data = $this->_table->row('*', $where)->toArray();
         return $this;
     }
 
@@ -464,7 +464,7 @@ abstract class Record
         $tableInstance = $tableClass::instance();
 
         //在子对象表中查询关联记录
-        $row = $tableInstance->getRow('*', [$foreignKey => $primaryValue], $orderBy);
+        $row = $tableInstance->row('*', [$foreignKey => $primaryValue], $orderBy);
 
         //转换成具体行对象
         $recordClass = 'R' . substr($tableClass, 1);
@@ -521,7 +521,7 @@ abstract class Record
         $tableInstance = $tableClass::instance();
 
         //在父对象表中查询关联记录
-        $row = $tableInstance->getRow('*', [$primaryKey => $foreignValue]);
+        $row = $tableInstance->row('*', [$primaryKey => $foreignValue]);
 
         //返回父表行记录对象
         $recordClass = 'R' . substr($tableClass, 1);

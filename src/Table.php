@@ -51,13 +51,13 @@ class Table extends TableCached
      * @param $fields mixed
      * @param $where mixed
      * @param $orderBy mixed
-     * @return Row 行对象/False
+     * @return Row 行对象,子类本方法会返回具体表的行对象
      * @throws \Exception
      */
-    public function getRow($fields = null, $where = null, $orderBy = null): Row
+    public function row($fields = null, $where = null, $orderBy = null)
     {
         // 查询数据
-        $row = parent::getRow($fields, $where, $orderBy);
+        $row = parent::row($fields, $where, $orderBy);
 
         // 如果没有查到
         if (!$row) {
