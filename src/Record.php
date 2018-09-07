@@ -335,9 +335,9 @@ abstract class Record
      * 实例化一个具体Record类
      * @param $className string 子类名
      * @param array $data
-     * @return Record
+     * @return Record 具体会返回一个子类对象
      */
-    public static function instanceRecord(string $className, array $data): Record
+    public static function instanceRecord(string $className, array $data)
     {
         return new $className($data);
     }
