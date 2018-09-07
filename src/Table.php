@@ -54,10 +54,10 @@ class Table extends TableCached
      * @return Row 行对象/False
      * @throws \Exception
      */
-    public function row($fields = null, $where = null, $orderBy = null): Row
+    public function getRow($fields = null, $where = null, $orderBy = null): Row
     {
         // 查询数据
-        $row = parent::row($fields, $where, $orderBy);
+        $row = parent::getRow($fields, $where, $orderBy);
 
         // 如果没有查到
         if (!$row) {

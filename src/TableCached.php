@@ -1172,7 +1172,7 @@ abstract class TableCached extends TableBase
      * @return null|Row
      * @throws \Exception
      */
-    public function row($fields = null, $where = null, $orderBy = null)
+    public function getRow($fields = null, $where = null, $orderBy = null)
     {
         // 按整个SELECT进行查询
         $table = self::selectArray($fields, $where, $orderBy, "1");
