@@ -33,7 +33,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string $tableName
      * @param array $data
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function __construct(string $tableName, array $data)
     {
@@ -46,7 +46,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
     /**
      * 行数据转换成行对象
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function row2Obj(): void
     {
@@ -151,7 +151,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param mixed $where
      * @return Result
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Result
     {
@@ -204,7 +204,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $relation 对应关系(本表字段=>要连接的表的字段)
      * @param array $fields 目标表的字段,取出,使用
      * @return Result
-     * @throws \Exception
+     * @throws MongoException|TableException|MysqlException|\MongoConnectionException|\MongoCursorTimeoutException
      */
     public function mapMongo(string $linkMongoName, $relation, array $fields = []): Result
     {
@@ -277,7 +277,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {
@@ -346,7 +346,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $sort
      * @return Result
-     * @throws \Exception
+     * @throws MongoException|TableException|\MongoCursorException|\MongoCursorTimeoutException|\MongoConnectionException|MysqlException
      */
     public function joinMongo(string $linkMongoName, $relation, array $fields = [], $where = [], $sort = []): Result
     {
@@ -492,7 +492,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function mapGroup($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {

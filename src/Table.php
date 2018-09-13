@@ -52,7 +52,7 @@ class Table extends TableCached
      * @param $where mixed
      * @param $orderBy mixed
      * @return Row 行对象,子类本方法会返回具体表的行对象
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function row($fields = null, $where = null, $orderBy = null)
     {
@@ -74,7 +74,7 @@ class Table extends TableCached
      * @param $order mixed
      * @param $limit mixed
      * @return Result 结果集对象
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function select($field = null, $where = null, $order = null, $limit = null)
     {
@@ -98,7 +98,7 @@ class Table extends TableCached
      * 不设置条件,返回指定 字段的数据
      * @param $field mixed
      * @return Result
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function selectAll($field): Result
     {
@@ -107,7 +107,7 @@ class Table extends TableCached
 
     /**
      * 在设置完查询前提之后的执行请求
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function go(): Result
     {
@@ -120,7 +120,7 @@ class Table extends TableCached
      * @param string $sql
      * @param array|string $bind 要绑定的参数
      * @return Result
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function query(string $sql, $bind = []): Result
     {
@@ -133,7 +133,7 @@ class Table extends TableCached
      * @param $sql string
      * @param array|string $bind 要绑定的参数
      * @return mixed
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function queryRaw(string $sql, $bind = [])
     {
@@ -143,7 +143,7 @@ class Table extends TableCached
     /**
      * 获取表的主键(字段名)
      * @return string/False
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function getPrimaryKey()
     {
@@ -163,7 +163,7 @@ class Table extends TableCached
      * 获取表结构
      * @param string $name 表名
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function meta(string $name = ''): array
     {
@@ -183,7 +183,7 @@ class Table extends TableCached
      * 获取表的索引信息
      * @param string $name 表名
      * @return array 索引数组
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function index(string $name = ''): array
     {

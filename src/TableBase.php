@@ -40,38 +40,41 @@ abstract class TableBase
     /**
      * 构造方法
      * @param string $alias
-     * @throws \Exception
+     * @throws MysqlException 表名错误
      */
     protected function __construct(string $alias)
     {
-        // 取数据库类型
-        $sql = config('system', 'sql');
+        // 取数据库类型,默认为mysql
+        $sql = configDefault('mysql', 'system', 'sql');
 
         if ($sql == 'mysql') {
             // 只支持这个
             $this->db = Mysql::instance();
         } elseif ($sql == 'oracle') {
-            // 不支持
-            $this->error(__METHOD__, __LINE__, 'oracle is not supported for now.');
+            trigger_error('不支持的数据库类型:Oracle');
         } elseif ($sql == 'sqlserver') {
-            // 不支持
-            $this->error(__METHOD__, __LINE__, 'sqlServer is not supported for now.');
+            trigger_error('不支持的数据库类型:SQLServer');
         } else {
-            // 不认识
-            $this->error(__METHOD__, __LINE__, 'this sql:' . $sql . ' is unknown');
+            trigger_error('不认识的数据库类型:'.$sql);
         }
-
-        // 检查表名,并规范化
-        $config = config('database', $alias);
 
         // 记录表的别名
         $this->alias = $alias;
 
+        // 检查表名,并规范化
+        $config = configDefault('', 'database', $alias);
+
         // 查找表的实际名称
-        $table = isset($config['table']) ? $config['table'] : $alias;
+        if ($config and isset($config['table'])) {
+            $table = $config['table'];
+        } else {
+            $table = $alias;
+        }
 
         // 表名规范化,加上前缀,后缀
-        $this->tableName = config('database', '_prefix') . $this->db->createTableName($table) . config('database', '_suffix');
+        $prefix = configDefault('', 'database', '_prefix');
+        $suffix = configDefault('', 'database', '_suffix');
+        $this->tableName = $prefix . $this->db->createTableName($table) . $suffix;
     }
 
     /**
@@ -80,25 +83,7 @@ abstract class TableBase
      */
     protected function enableMulti(): bool
     {
-        return config('database', '_enable_multi');
-    }
-
-    /**
-     * 简化且直接的异常
-     * @param string $method
-     * @param int $line
-     * @param string $msg
-     * @throws \Exception
-     */
-    protected function error(string $method, int $line, string $msg): void
-    {
-        $prefix = "Method:" . $method . "\n";
-        $prefix .= "Lines:" . $line . "\n";
-        $prefix .= "Class:" . get_class($this) . "\n";
-        $prefix .= "Table:" . $this->tableName . "\n";
-        $prefix .= "Time:" . date('Y-m-d H:i:s') . "\n";
-
-        throw new \Exception($prefix . $msg);
+        return configDefault(false, 'database', '_enable_multi');
     }
 
     /**
@@ -126,7 +111,7 @@ abstract class TableBase
      * 支持读写分离
      *
      * @return \PDO 句柄
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function connectRead(): \PDO
     {
@@ -149,7 +134,7 @@ abstract class TableBase
      * 延迟连接,因为有可能缓存,可以不访问数据库
      * 支持读写分离
      * @return \PDO
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function connectWrite(): \PDO
     {
@@ -161,7 +146,7 @@ abstract class TableBase
      * 快速 版插入(不记录日志,不记录调试)
      * @param array $row 要插入的数据
      * @return int 新插入数据的ID
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function insertFast(array $row): int
     {
@@ -181,7 +166,7 @@ abstract class TableBase
      * @param $sql string 要执行的语句
      * @param array|string $bind 要绑定的参数
      * @return int|bool 影响的行数
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function executeFast(string $sql, $bind = [])
     {
@@ -196,7 +181,7 @@ abstract class TableBase
      * @param $sql string 要查询的语句
      * @param array|string $bind 要绑定的参数
      * @return \PDOStatement
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function queryFastHandle(string $sql, $bind = []): \PDOStatement
     {
@@ -209,7 +194,7 @@ abstract class TableBase
 
         //通常是参数绑定问题
         if (!$ret) {
-            throw new \Exception('PDOStatement bind parameters error:' . $stmt->errorCode());
+            throw new TableException('PDO语句参数绑定错误:' . $stmt->errorCode(), TableException::PDO_BIND_ERROR);
         }
         return $stmt;
     }
@@ -219,7 +204,7 @@ abstract class TableBase
      * @param $sql string 要查询的语句
      * @param array|string $bind 要绑定的参数
      * @return array
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function queryFast(string $sql, $bind = []): array
     {
@@ -241,14 +226,14 @@ abstract class TableBase
      * 对表进行写锁定(或指定读锁)
      * @param $level string read|write
      * @return TableBase
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function lock(string $level = 'write'): TableBase
     {
         //读/写模式
         $level = strtolower($level);
         if (!in_array($level, ['read', 'write'])) {
-            throw new \Exception('unknown lock level:' . $level);
+            throw new TableException('锁表类型只能是READ/WRITE:' . $level, TableException::LOCK_TYPE_ERROR);
         }
 
         $this->db->lock($this->tableName, $level);
@@ -258,7 +243,7 @@ abstract class TableBase
     /**
      * 解除表锁
      * @return TableBase
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function unlock(): TableBase
     {
@@ -282,7 +267,7 @@ abstract class TableBase
      */
     protected function enableAutoField(): bool
     {
-        return boolval(config('database', '_auto_field'));
+        return boolval(configDefault(false, 'database', '_auto_field'));
     }
 
     /**
@@ -292,13 +277,13 @@ abstract class TableBase
     protected function logEnabled()
     {
         //日志表名称数组
-        $tables = config('log', 'noLogTables');
+        $tables = configDefault([], 'log', 'noLogTables');
         if (!$tables) {
             return false;
         }
 
         //日志方法(callable)
-        $method = config('log', 'operationLog');
+        $method = configDefault(false, 'log', 'operationLog');
         if (!$method) {
             return false;
         }
@@ -316,14 +301,13 @@ abstract class TableBase
      * 执行增删改,并记录日志
      * @param Statement $statement
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     protected function executeStatement(Statement $statement): bool
     {
         // 要执行的SQL语句必须是字符串
         if ($statement->isNull()) {
-            $this->error(__METHOD__, __LINE__, 'Execute Statement is null');
-            //throw exception;
+            throw new TableException('要执行的语句不能为空', TableException::EXECUTE_NULL);
         }
 
         // 记录开始时间
@@ -336,8 +320,10 @@ abstract class TableBase
         $prepare = $statement->getPrepare();
         $params = $statement->getParams();
 
+        $noLog = in_array($this->tableName, configDefault([], 'log', 'noLogTables'));
+
         //先记录日志,以免出错崩溃
-        if (!in_array($this->tableName, config('log', 'noLogTables'))) {
+        if (!$noLog) {
             FileLog::instance()->sqlBefore('execute', $statement->getSql());
         }
 
@@ -358,7 +344,7 @@ abstract class TableBase
         $interval = timeLog($begin);
 
         // 记录耗时
-        if (!in_array($this->tableName, config('log', 'noLogTables'))) {
+        if (!$noLog) {
             FileLog::instance()->sqlAfter('afterExecute', $statement->getSql(), $result, $interval, $statement->getOperation());
         }
 
@@ -371,7 +357,7 @@ abstract class TableBase
     /**
      * 获取最后插入的记录的ID
      * @return int
-     * @throws \Exception
+     * @throws MysqlException
      */
     protected function getInsertedId(): int
     {
@@ -383,13 +369,13 @@ abstract class TableBase
      *
      * @param Statement $statement
      * @return mixed
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     protected function queryStatement(Statement $statement)
     {
         // 要查询的SQL语句必须是字符串
         if ($statement->isNull()) {
-            $this->error(__METHOD__, __LINE__, 'Query Statement is null');
+            throw new TableException('要查询的语句不能为空', TableException::QUERY_NULL);
             //will throw exception
         }
 
@@ -406,22 +392,13 @@ abstract class TableBase
         // 从读服务器进行读操作
         $connect = $this->connectRead();
 
-        try {
-            // 如果绑定参数为空,直接执行就好.
-            if (empty($params)) {
-                $ret = $connect->query($prepare);
-                $result = $ret->fetchAll(\PDO::FETCH_ASSOC);
-                unset($ret);
-            } else {
-                $result = $this->bindQuery($connect, $prepare, $params);
-            }
-        } catch (\Exception $e) {
-            var_dump($prepare, 'prepared Statement');
-            var_dump($params, 'Params');
-            var_dump($e->getMessage(), $e->getCode());
-            $trace = implode('<br/>', self::traceBind($e->getTrace()));
-            echo($trace);
-            exit();
+        // 如果绑定参数为空,直接执行就好.
+        if (empty($params)) {
+            $ret = $connect->query($prepare);
+            $result = $ret->fetchAll(\PDO::FETCH_ASSOC);
+            unset($ret);
+        } else {
+            $result = $this->bindQuery($connect, $prepare, $params);
         }
 
         // 计算耗时
@@ -436,29 +413,11 @@ abstract class TableBase
     }
 
     /**
-     * 简化调用跟踪信息
-     *
-     * @param array $trace
-     * @return array
-     */
-    private function traceBind(array $trace): array
-    {
-        $ret = [];
-        foreach ($trace as $t) {
-            if ($t['class'] == 'PDO' or substr($t['class'], 0, 6) == 'STable') {
-                continue;
-            }
-            $ret[] = "{$t['class']}::{$t['function']}({$t['line']}) in {$t['file']}";
-        }
-        return $ret;
-    }
-
-    /**
      * 返回查询语句句柄,不需要事先读取全部数据,最节省内存
      * 为 Table调用
      * @param Statement $statement
      * @return \PDOStatement
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function queryHandle(Statement $statement): \PDOStatement
     {
@@ -521,13 +480,12 @@ abstract class TableBase
     /**
      * 事务开始,自动解除自动提交
      * @return int
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function begin(): int
     {
         if (self::enableMulti()) {
-            $this->error(__METHOD__, __LINE__, 'Transaction disabled in multi database mode.');
-            //will throw exception
+            throw new TableException('允许多表查询情况下无法使用事务:datbase/_enable_multi', TableException::TRANSACTION_IN_MULTI);
         }
 
         // 事务层数加1
@@ -541,20 +499,18 @@ abstract class TableBase
 
     /**
      * 事务提交
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function commit(): void
     {
         // 如果允许多数据库,无法事务
         if (self::enableMulti()) {
-            $this->error(__METHOD__, __LINE__, 'Transaction disabled in multi database mode.');
-            //will throw exception
+            throw new TableException('允许多表查询情况下无法使用事务:datbase/_enable_multi', TableException::TRANSACTION_IN_MULTI);
         }
 
         // 如果事务层次没了,不应该提交
         if (self::$transaction <= 0) {
-            $this->error(__METHOD__, __LINE__, 'Commit without begin.');
-            //will throw exception
+            throw new TableException('不允许单独的事务提交(缺少事务开始)', TableException::COMMIT_WITHOUT_BEGIN);
         }
 
         // 嵌套层次减少
@@ -566,20 +522,18 @@ abstract class TableBase
 
     /**
      * 事务回滚
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function rollback(): void
     {
         // 允许多库时,无法回滚
         if (self::enableMulti()) {
-            $this->error(__METHOD__, __LINE__, 'Transaction disabled in multi database mode.');
-            //will throw exception
+            throw new TableException('允许多表查询情况下无法使用事务:datbase/_enable_multi', TableException::TRANSACTION_IN_MULTI);
         }
 
         // 嵌套层次没了
         if (self::$transaction <= 0) {
-            $this->error(__METHOD__, __LINE__, 'Rollback without begin.');
-            //will throw exception
+            throw new TableException('不允许单独的事务回滚(缺少事务开始)', TableException::ROLLBACK_WITHOUT_BEGIN);
         }
 
         // 嵌套层次减少
@@ -630,7 +584,7 @@ abstract class TableBase
      * @param $prepare string 查询语句(带占位符)
      * @param $params array 绑定参数
      * @return array
-     * @throws \Exception
+     * @throws TableException
      */
     private function bindQuery(\PDO $connect, string $prepare, array $params = []): array
     {
@@ -639,7 +593,7 @@ abstract class TableBase
 
         //通常是参数绑定问题
         if (!$ret) {
-            throw new \Exception('PDOStatement bind parameters error:' . $stmt->errorCode());
+            throw new TableException('PDO语句参数绑定错误:' . $stmt->errorCode(), TableException::PDO_BIND_ERROR);
         }
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -650,7 +604,7 @@ abstract class TableBase
      * @param $prepare string 查询语句(带占位符)
      * @param $params array 绑定参数
      * @return bool
-     * @throws \Exception
+     * @throws TableException
      */
     private function bindExecute(\PDO $connect, string $prepare, array $params): bool
     {
@@ -659,7 +613,7 @@ abstract class TableBase
 
         //通常是参数绑定问题
         if (!$ret) {
-            throw new \Exception('PDOStatement bind parameters error:' . $stmt->errorCode());
+            throw new TableException('PDO语句参数绑定错误:' . $stmt->errorCode(), TableException::PDO_BIND_ERROR);
         }
         return $ret;
     }

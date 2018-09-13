@@ -38,7 +38,7 @@ abstract class TableCached extends TableBase
      *
      * @param string $alias 表别名
      * @param $fileCache bool 是否要对本表进行文件缓存
-     * @throws \Exception
+     * @throws MysqlException 表名错误
      */
     protected function __construct(string $alias, bool $fileCache = false)
     {
@@ -60,7 +60,7 @@ abstract class TableCached extends TableBase
      * @param string $alias
      * @param bool $fileCache
      * @return Table      注:就是Table,而不是TableCache
-     * @throws \Exception
+     * @throws MysqlException 表名错误
      */
     static public function getInstance(string $alias, bool $fileCache = false): Table
     {
@@ -97,7 +97,7 @@ abstract class TableCached extends TableBase
      * @param $join mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function join($join, $on = null): TableCached
     {
@@ -109,7 +109,7 @@ abstract class TableCached extends TableBase
      * @param $join mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function leftJoin($join, $on = null): TableCached
     {
@@ -122,7 +122,7 @@ abstract class TableCached extends TableBase
      * @param $join mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function rightJoin($join, $on = null): TableCached
     {
@@ -135,7 +135,7 @@ abstract class TableCached extends TableBase
      * @param $join mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function innerJoin($join, $on = null): TableCached
     {
@@ -148,7 +148,7 @@ abstract class TableCached extends TableBase
      * @param $join mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function outerJoin($join, $on = null): TableCached
     {
@@ -160,7 +160,7 @@ abstract class TableCached extends TableBase
      * 只设置关联条件
      * @param $on mixed 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function on($on): TableCached
     {
@@ -281,7 +281,7 @@ abstract class TableCached extends TableBase
      * @param string $sql SQL语句
      * @param array|string $bind 要绑定的参数
      * @return mixed 查询数据
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function query(string $sql, $bind = [])
     {
@@ -315,8 +315,7 @@ abstract class TableCached extends TableBase
 
         // 如果识别出多个表名
         if ($tables > 1) {
-            $this->error(__METHOD__, __LINE__, 'Multi table query disabled.');
-            //will throw exception
+            throw new TableException('查询语句中不允许同时指定多个表名:' . json($tables), TableException::MULTI_TABLE_IN_QUERY);
         }
 
         // 只有一个表
@@ -324,8 +323,7 @@ abstract class TableCached extends TableBase
 
         // 如果语句中的表名与初始化时不同,则错误
         if ($table != $this->tableName) {
-            $this->error(__METHOD__, __LINE__, 'Tablename not match ' . $this->tableName . ' from ' . $this->statement->getSql());
-            //will throw exception
+            throw new TableException('表名不匹配:' . $this->tableName . ':' . $this->statement->getSql(), TableException::TABLE_NAME_DIFFERENT);
         }
 
         // 调用 父类的 查询语句获取结果, 执行后置钩子进行转换
@@ -336,7 +334,7 @@ abstract class TableCached extends TableBase
      * 执行查询
      * 调用父类的查询,参数为语句(Statement),之后清除保存的各种状态
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function queryStatementAndClear()
     {
@@ -352,7 +350,7 @@ abstract class TableCached extends TableBase
     /**
      * 处理查询操作,被query,select2,exist调用
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function query2()
     {
@@ -410,7 +408,7 @@ abstract class TableCached extends TableBase
      * @param $orderBy mixed
      * @param $limit mixed
      * @return array 二维数组(一维无键，二维有键)
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function select2($fields = false, $where = null, $orderBy = null, $limit = null): array
     {
@@ -445,7 +443,7 @@ abstract class TableCached extends TableBase
      * @param string $orderBy
      * @param string $limit
      * @return string
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function sql(string $fields = null, string $where = null, string $orderBy = null, string $limit = null): string
     {
@@ -463,7 +461,7 @@ abstract class TableCached extends TableBase
      * 这个不缓存,不受多表限制,直接调用底层查询
      * @param $name string|bool
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     protected function getMeta(string $name = null): array
     {
@@ -474,7 +472,7 @@ abstract class TableCached extends TableBase
      * 获取表的索引信息
      * @param string|null $name
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     protected function getIndex(string $name = null): array
     {
@@ -484,7 +482,7 @@ abstract class TableCached extends TableBase
     /**
      * 获取当前数据库中所有表名
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function showTables(): array
     {
@@ -494,21 +492,32 @@ abstract class TableCached extends TableBase
     /**
      * 获取默认数据库的信息
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function databaseInfo(): array
     {
-        return self::query($this->db->createDatabaseInfo(config('database', '_default', 'read', 'database')));
+        try {
+            $default = config('database', '_default', 'read', 'database');
+        } catch (ConfigException $e) {
+            throw new TableException('尚未配置默认数据库(database|_default|read|database)', TableException::MISS_DEFAULT_DATABASE);
+        }
+        return self::query($this->db->createDatabaseInfo($default));
     }
 
     /**
      * 获取默认数据库的全部表的详细信息
      * @return array
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function tablesStatus(): array
     {
-        return self::query($this->db->createTablesStatus(config('database', '_default', 'read', 'database')));
+        try {
+            $default = config('database', '_default', 'read', 'database');
+        } catch (ConfigException $e) {
+            throw new TableException('尚未配置默认数据库(database|_default|read|database)', TableException::MISS_DEFAULT_DATABASE);
+        }
+
+        return self::query($this->db->createTablesStatus($default));
     }
 
     /**
@@ -518,7 +527,7 @@ abstract class TableCached extends TableBase
      * @param $orderBy mixed
      * @param $limit mixed
      * @return array 二维数组(一维无键，二维有键)
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function selectArray($fields = null, $where = null, $orderBy = null, $limit = null): array
     {
@@ -532,7 +541,7 @@ abstract class TableCached extends TableBase
      * @param $orderBy mixed
      * @param $limit mixed
      * @return \PDOStatement
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function selectHandle($fields = null, $where = null, $orderBy = null, $limit = null): ?\PDOStatement
     {
@@ -557,7 +566,7 @@ abstract class TableCached extends TableBase
      * @param string $sql 要执行的SQL语句
      * @param array|string $bind 要绑定的参数
      * @return mixed 执行结果
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function execute(string $sql, $bind = [])
     {
@@ -602,8 +611,7 @@ abstract class TableCached extends TableBase
 
         // 如果识别出多个表名
         if (count($tables) > 1) {
-            $this->error(__METHOD__, __LINE__, 'Multi table query disabled.');
-            //will throw exception
+            throw new TableException('执行语句中不允许同时指定多个表名', TableException::MULTI_TABLE_IN_EXECUTE);
         }
 
         // 取表名
@@ -611,8 +619,7 @@ abstract class TableCached extends TableBase
 
         // 如果语句中的表名与初始化时不同,则错误
         if ($table != $this->tableName) {
-            $this->error(__METHOD__, __LINE__, 'Tablename not match ' . $this->tableName . ' from ' . $sql);
-            //will throw exception
+            throw new TableException('表名不匹配:' . $this->tableName . ':' . $sql, TableException::TABLE_NAME_DIFFERENT);
         }
 
         // 执行具体删除操作
@@ -631,7 +638,7 @@ abstract class TableCached extends TableBase
      * @param bool $before 是否保存之前数据
      * @param bool $after 是否保存之后 数据
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function log(string $operation, array $data, string $fields = '*', $where = '', bool $before = true, bool $after = true): bool
     {
@@ -674,7 +681,7 @@ abstract class TableCached extends TableBase
      * 执行操作
      * 调用父类的执行操作,参数为语句(Statement),之后清除各种保存的状态
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function executeStatementAndClear(): bool
     {
@@ -686,7 +693,7 @@ abstract class TableCached extends TableBase
     /**
      * 具体执行语句
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function execute2(): bool
     {
@@ -748,7 +755,7 @@ abstract class TableCached extends TableBase
      * Replace的 经过前置钩子之后 的处理
      * @param $row array 要插入的数据
      * @return int 行编号
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function processReplace(array $row): int
     {
@@ -789,7 +796,7 @@ abstract class TableCached extends TableBase
      * 具体执行Insert Ignore 并返回 数据行的编号
      * @param array $row 要插入的行
      * @return int
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     private function processInsertIgnore2(array $row): int
     {
@@ -815,7 +822,7 @@ abstract class TableCached extends TableBase
      * InsertIgnore的 经过前置钩子之后 的处理
      * @param $row array 要插入的数据
      * @return int 行编号
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function processInsertIgnore(array $row): int
     {
@@ -852,7 +859,7 @@ abstract class TableCached extends TableBase
      * Insert的 经过前置钩子之后 的处理
      * @param $row array 要插入的数据
      * @return int 行编号
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function processInsertOperation(array $row): int
     {
@@ -897,7 +904,7 @@ abstract class TableCached extends TableBase
      * @param $operator string 操作符,Insert/Replace/InsertIgnore
      * @param $row array 要插入的数据
      * @return mixed|null|string
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function afterInsertReplaceInsertIgnore(string $operator, array $row)
     {
@@ -916,14 +923,14 @@ abstract class TableCached extends TableBase
             return self::processReplace($row);
         }
 
-        throw new \Exception('不可能 到达 这里:' . $operator);
+        throw new TableException('不应该到达这里:' . $operator, TableException::SHOULD_NOT_BE_HERE);
     }
 
     /**
      * 对应MYSQL的REPLACE语句,有则修改,无则插入
      * @param array $row
      * @return number|string
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function replace(array $row)
     {
@@ -945,7 +952,7 @@ abstract class TableCached extends TableBase
      * 单行插入
      * @param array [1] $row  <列名>=><值>
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function insert(array $row): ?int
     {
@@ -967,7 +974,7 @@ abstract class TableCached extends TableBase
      * 多行插入
      * @param array $rows 要插入的多行数据
      * @return bool|null
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function inserts(array $rows): ?bool
     {
@@ -1001,7 +1008,7 @@ abstract class TableCached extends TableBase
      *
      * @param array $row
      * @return number string
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function insertIgnore(array $row)
     {
@@ -1024,7 +1031,7 @@ abstract class TableCached extends TableBase
      *
      * @param mixed $where 请参考createWhere
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function delete($where): ?int
     {
@@ -1051,9 +1058,8 @@ abstract class TableCached extends TableBase
 
     /**
      * 删除表中全部数据
-     *
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function deleteAll(): int
     {
@@ -1066,9 +1072,8 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param $orderBy mixed
      * @param $limit mixed
-     *
+     * @throws TableException|MysqlException
      * @return array
-     * @throws \Exception
      */
     public function col($fields, $where = null, $orderBy = null, $limit = null): array
     {
@@ -1104,7 +1109,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param $orderBy mixed
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function getInt($fields = null, $where = null, $orderBy = null): int
     {
@@ -1116,7 +1121,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param mixed $orderBy
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function getId($where, $orderBy = null): int
     {
@@ -1129,7 +1134,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param $orderBy mixed
      * @return float
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function getFloat($fields = null, $where = null, $orderBy = null): float
     {
@@ -1142,7 +1147,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param $orderBy mixed
      * @return mixed 单值
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function get($fields, $where = null, $orderBy = null)
     {
@@ -1170,7 +1175,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @param $orderBy mixed
      * @return null|Row
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function row($fields = null, $where = null, $orderBy = null)
     {
@@ -1193,7 +1198,7 @@ abstract class TableCached extends TableBase
      * @param mixed $where 请参考 _createWhere
      * @param float $diff 增加或减少的数值
      * @return int|false 影响的行数
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function crease(string $operator = '+', $fields, $where, float $diff): int
     {
@@ -1225,7 +1230,7 @@ abstract class TableCached extends TableBase
      * @param mixed $where 请参考 _createWhere
      * @param int|float $diff 增加的数值
      * @return int 影响的行数
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function increase($fields, $where, float $diff = 1): int
     {
@@ -1239,7 +1244,7 @@ abstract class TableCached extends TableBase
      * @param mixed $where 请参考 _createWhere
      * @param int|float $diff 增加的数值
      * @return int 影响的行数
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function decrease($fields, $where, float $diff = 1): int
     {
@@ -1252,7 +1257,7 @@ abstract class TableCached extends TableBase
      * @param array [1] $row <列名>=><值>
      * @param mixed $where 请参考createWhere
      * @return mixed
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function update(array $row, $where = null)
     {
@@ -1296,10 +1301,9 @@ abstract class TableCached extends TableBase
 
     /**
      * 统计满足条件的记录数
-     *
      * @param mixed $where 请参考createWhere
      * @return int
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function count($where = null): int
     {
@@ -1312,7 +1316,7 @@ abstract class TableCached extends TableBase
      *
      * @param mixed $where
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function exist($where = false): bool
     {
@@ -1325,7 +1329,7 @@ abstract class TableCached extends TableBase
      * 判断是否不存在满足条件的记录
      * @param bool $where 条件
      * @return bool
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function notExist($where = false): bool
     {
@@ -1338,7 +1342,7 @@ abstract class TableCached extends TableBase
      * @param mixed $field 字段
      * @param mixed $where 条件
      * @return float
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function sum($field, $where = null): float
     {
@@ -1359,7 +1363,7 @@ abstract class TableCached extends TableBase
      * 调用相应数据库的类,对字段列表处理
      * @param $fields
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     public function createFields($fields): string
     {

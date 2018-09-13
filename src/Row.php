@@ -20,7 +20,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string|Table $table
      * @param array|null $data
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function __construct($table, ? array $data = null)
     {
@@ -35,7 +35,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param $where mixed
      * @return Row
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Row
     {
@@ -90,7 +90,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param string $linkMongoName
      * @param mixed $relation
      * @param array $fields
-     * @throws \Exception
+     * @throws TableException|MongoException
      * @return Row
      */
     public function mapMongo($linkMongoName, $relation, array $fields = []): Row
@@ -107,7 +107,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 如果本表关联字段不存在
         if (!array_key_exists($field, $this->data)) {
-            throw new \Exception('My field in map not exist:' . $field);
+            throw new TableException('映射Mongo时,主表字段不存在:'.$field,TableException::MAP_MONGO_SOURCE_FIELD_NOT_EXISTS);
         }
 
         // 生成本表关联字段的所有值
@@ -162,8 +162,8 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param mixed $where
      * @param mixed $orderBy
-     * @throws \Exception
      * @return Row
+     * @throws TableException|MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Row
     {
@@ -200,7 +200,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param array $fields
      * @param mixed $where
      * @param mixed $sort
-     * @throws \Exception
+     * @throws TableException|MongoException|\MongoCursorException|\MongoCursorTimeoutException|\MongoConnectionException
      * @return Row
      */
     public function joinMongo($linkMongoName, $relation, array $fields = [], $where = [], $sort = []): Row
@@ -217,7 +217,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 如果本表关联字段不存在
         if (!array_key_exists($field, $this->data)) {
-            throw new \Exception('My field in join not exist:' . $field);
+            throw new TableException('关联Mongo时,主表字段不存在:'.$field,TableException::JOIN_MONGO_SOURCE_FIELD_NOT_EXISTS);
         }
 
         // 生成本表关联字段的所有值
@@ -254,7 +254,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string $name 字段名或别名
      * @return mixed 字段的值
-     * @throws \Exception
+     * @throws TableException
      */
     public function __get(string $name)
     {
@@ -264,7 +264,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 调试模式报错,运行模式,返回一个空串
         if (isDebug()) {
-            throw new \Exception('Wrong field:' . $name);
+            throw new TableException('无法在行对象中找到指定的字段:'.$name,TableException::FIELD_NOT_EXISTS_IN_ROW);
         } else {
             return '';
         }
@@ -321,7 +321,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
     }
 
     /**
-     * 将一个SROW对象转换成R***对象
+     * 将一个ROW对象转换成R***对象
      * @param $recordClass string R对象类型
      * @return Record
      */

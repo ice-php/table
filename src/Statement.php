@@ -134,12 +134,12 @@ class Statement
      * @param $table mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function join(string $operation, $table, $on = null): Statement
     {
         if (count($this->joins) > count($this->ons)) {
-            throw new \Exception('join without on');
+            throw new TableException('关联时,关联关系不足',TableException::JOIN_MORE_THAN_ON);
         }
         $this->joinOperations[] = $operation;
         $this->joins[] = $table;
@@ -153,12 +153,12 @@ class Statement
      * 记录on操作参数
      * @param $relation mixed 关联条件
      * @return $this
-     * @throws \Exception
+     * @throws TableException
      */
     public function on($relation): Statement
     {
         if (count($this->ons) >= count($this->joins)) {
-            throw new \Exception("relation:'on' more than join");
+            throw new TableException('关联时,关联关系过多',TableException::JOIN_LESS_THAN_ON);
         }
         $this->ons[] = $relation;
         return $this;
@@ -377,7 +377,7 @@ class Statement
      * 生成params参数数组
      * 生成表个数/表名
      *
-     * @throws \Exception
+     * @throws TableException|MysqlException
      * @return string
      */
     public function create(): string
@@ -423,7 +423,7 @@ class Statement
                 // 增减
                 return $this->createCrease();
         }
-        throw new \Exception('Unknown Operator:"' . $this->operation . '"');
+        throw new TableException('无法识别或不支持的SQL命令:'.$this->operation,TableException::SQL_COMMAD_UNKNOWN);
     }
 
     /**
@@ -440,7 +440,7 @@ class Statement
     /**
      * 具体生成exist的相关数据,利用了select
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createExist(): string
     {
@@ -458,7 +458,7 @@ class Statement
     /**
      * 具体生成query的相关数据
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createQuery(): string
     {
@@ -474,7 +474,7 @@ class Statement
     /**
      * 具体生成execute的相关数据
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createExecute(): string
     {
@@ -490,7 +490,7 @@ class Statement
     /**
      * 具体生成Select的相关数据
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createSelect(): string
     {
@@ -534,7 +534,7 @@ class Statement
      * 具体生成insert/insertIgnore/replace的相关数据
      * 此三种方法类似
      * @return string
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     private function createAdd(): string
     {
@@ -563,7 +563,7 @@ class Statement
                 $this->prepare = $this->db->createReplace($this->table, $fields, $vHolder);
                 break;
             default:
-                throw new \Exception('Unblievable , should not be here. Operator:' . $this->operation);
+                throw new TableException('不应该到达这里,命令为:'.$this->operation,TableException::SHOULD_NOT_BE_HERE);
         }
 
         $this->params = $values;
@@ -574,7 +574,7 @@ class Statement
     /**
      * 具体生成Inserts的相关数据
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createInserts(): string
     {
@@ -619,14 +619,14 @@ class Statement
     {
         $diff = floatval($diff);
 
-        $sqls = $prepares = $params = [];
+        $sqlArray = $prepares = $params = [];
 
         foreach ($fields as $field) {
             // 对字段名进行规范化
             $f = $this->db->markField($field);
 
             // 用于SQL中
-            $sqls[] = $this->db->createCrease($f, $op, $diff);
+            $sqlArray[] = $this->db->createCrease($f, $op, $diff);
 
             // 用于Prepare中
             $prepares[] = $this->db->createCrease($f, $op, '?');
@@ -635,13 +635,13 @@ class Statement
             $params[] = $diff;
         }
 
-        return [$sqls, $prepares, $params];
+        return [$sqlArray, $prepares, $params];
     }
 
     /**
      * 具体生成crease相关数据
      * @return string
-     * @throws \Exception
+     * @throws MysqlException
      */
     private function createCrease(): string
     {
@@ -672,7 +672,7 @@ class Statement
     /**
      * 具体生成Update的相关数据
      * @return string
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function createUpdate(): string
     {
@@ -687,7 +687,7 @@ class Statement
 
         // 更新时未指定条件
         if (!$whereSql) {
-            throw new \Exception('Update must speical condidtion,can\'t udpate whole table.');
+            throw new TableException('Update操作必须指定查询条件,不允许全表修改',TableException::MISS_CONDITION_IN_UPDATE);
         }
 
         // 字段数组中的三项
@@ -723,7 +723,7 @@ class Statement
      * 具体 Delete的相关数据
      *
      * @return mixed
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     private function createDelete()
     {
@@ -735,7 +735,7 @@ class Statement
 
         // 更新时未指定条件
         if (!$condition) {
-            throw new \Exception('Update must speical condidtion,can\'t udpate whole table.');
+            throw new TableException('Delete操作必须指定查询条件,不允许全表删除',TableException::MISS_CONDITION_IN_DELETE);
         }
 
         // 生成三项

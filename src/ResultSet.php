@@ -31,7 +31,7 @@ class ResultSet extends Result
      * SResultSet constructor.
      * @param string $tableName
      * @param array $data
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     public function __construct(string $tableName, array $data)
     {
@@ -41,8 +41,12 @@ class ResultSet extends Result
         //表名,首页字母大写规范化
         $formatted = self::formatter($tableName, true);
 
-        //表类
+        /**
+         * 具体的表 类
+         * @var $tableClass Table
+         */
         $tableClass = $this->tableClass = 'T' . $formatted;
+
 
         //表的主键字段  这个肯定有
         $this->primaryKey = $tableClass::$primaryKey;
@@ -64,7 +68,7 @@ class ResultSet extends Result
      * 实例化,由关联关系自动生成
      * @param Result $result 结果集
      * @return ResultSet
-     * @throws \Exception
+     * @throws MysqlException|TableException
      */
     static public function instance(Result $result): ResultSet
     {
@@ -95,7 +99,7 @@ class ResultSet extends Result
     /**
      * 保存时,要每个行对象进行保存
      * 还要查看是否有需要删除的对象
-     * @throws \Exception
+     * @throws TableException|MysqlException
      */
     public function save(): void
     {
@@ -177,7 +181,7 @@ class ResultSet extends Result
                 } elseif (!is_array($r)) {
                     $deleted[] = $r;
                 } else {
-                    throw  new \Exception('records want removed unknown');
+                    throw  new TableException('要移除的记录无法识别:' . json($r), TableException::WANT_REMOVE_UNKNOWN);
                 }
             }
         }
@@ -198,7 +202,7 @@ class ResultSet extends Result
      * @param bool $firstUpper 转换后的首字母是否大写
      * @return string
      */
-    private static function formatter(string $name,bool $firstUpper = true):string
+    private static function formatter(string $name, bool $firstUpper = true): string
     {
         // 将表名中的下划线转换为大写字母
         $words = explode('_', $name);
