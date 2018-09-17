@@ -197,8 +197,8 @@ trait TableHook
 
     /**
      * 执行后置钩子
-     * param $op string 操作
-     * param $params array 操作结果(有时,带一个前导操作符)
+     * @param $op string 操作
+     * @param $params array 操作结果(有时,带一个前导操作符)
      * @return mixed 处理过的操作结果
      */
     protected function after(string $op, ...$params)

@@ -26,7 +26,6 @@ abstract class SLink implements \IteratorAggregate, \ArrayAccess
      *
      * @param string $tableName
      * @param array $data
-     * @throws MysqlException|TableException
      */
     protected function __construct(string $tableName, array $data)
     {
@@ -51,7 +50,6 @@ abstract class SLink implements \IteratorAggregate, \ArrayAccess
      *            ***    array('本表字段','关联表字段')
      * @param $database string 数据库类型,当前只支持MYSQL
      * @return array(<本表字段>,<关联表字段>)
-     * @throws TableException
      */
     protected function relation($relation, string $database = 'mysql'): array
     {
@@ -67,7 +65,7 @@ abstract class SLink implements \IteratorAggregate, \ArrayAccess
 
         // 字符串形式
         if (!is_string($relation)) {
-            throw new TableException('关联关系格式错误:' . json($relation), TableException::RELATION_TYPE_ERROR);
+            trigger_error('关联关系格式错误:' . json($relation), E_USER_ERROR);
         }
 
         // 分解关联键
@@ -129,7 +127,6 @@ abstract class SLink implements \IteratorAggregate, \ArrayAccess
      * @param mixed $fields
      * @param string $field
      * @return string|array
-     * @throws MysqlException
      */
     protected function append($fields, string $field)
     {
@@ -195,8 +192,6 @@ abstract class SLink implements \IteratorAggregate, \ArrayAccess
      *
      * @param string|Table $table
      * @return Table|null
-     * @throws TableException 未指明表名
-     * @throws MysqlException 表名错误
      */
     protected function makeTable($table): ?Table
     {

@@ -134,12 +134,11 @@ class Statement
      * @param $table mixed 要关联的表
      * @param mixed $on 关联条件
      * @return $this
-     * @throws TableException
      */
     public function join(string $operation, $table, $on = null): Statement
     {
         if (count($this->joins) > count($this->ons)) {
-            throw new TableException('关联时,关联关系不足',TableException::JOIN_MORE_THAN_ON);
+            trigger_error('关联时,关联关系不足', E_USER_ERROR);
         }
         $this->joinOperations[] = $operation;
         $this->joins[] = $table;
@@ -153,12 +152,11 @@ class Statement
      * 记录on操作参数
      * @param $relation mixed 关联条件
      * @return $this
-     * @throws TableException
      */
     public function on($relation): Statement
     {
         if (count($this->ons) >= count($this->joins)) {
-            throw new TableException('关联时,关联关系过多',TableException::JOIN_LESS_THAN_ON);
+            trigger_error('关联时,关联关系过多', E_USER_ERROR);
         }
         $this->ons[] = $relation;
         return $this;
@@ -377,8 +375,8 @@ class Statement
      * 生成params参数数组
      * 生成表个数/表名
      *
-     * @throws TableException|MysqlException
      * @return string
+     * @throws MysqlException
      */
     public function create(): string
     {
@@ -423,7 +421,8 @@ class Statement
                 // 增减
                 return $this->createCrease();
         }
-        throw new TableException('无法识别或不支持的SQL命令:'.$this->operation,TableException::SQL_COMMAD_UNKNOWN);
+        trigger_error('无法识别或不支持的SQL命令:' . $this->operation, E_USER_ERROR);
+        return '';
     }
 
     /**
@@ -440,7 +439,6 @@ class Statement
     /**
      * 具体生成exist的相关数据,利用了select
      * @return string
-     * @throws MysqlException
      */
     private function createExist(): string
     {
@@ -458,7 +456,6 @@ class Statement
     /**
      * 具体生成query的相关数据
      * @return string
-     * @throws MysqlException
      */
     private function createQuery(): string
     {
@@ -474,7 +471,6 @@ class Statement
     /**
      * 具体生成execute的相关数据
      * @return string
-     * @throws MysqlException
      */
     private function createExecute(): string
     {
@@ -490,7 +486,6 @@ class Statement
     /**
      * 具体生成Select的相关数据
      * @return string
-     * @throws MysqlException
      */
     private function createSelect(): string
     {
@@ -534,7 +529,7 @@ class Statement
      * 具体生成insert/insertIgnore/replace的相关数据
      * 此三种方法类似
      * @return string
-     * @throws MysqlException|TableException
+     * @throws MysqlException
      */
     private function createAdd(): string
     {
@@ -563,7 +558,7 @@ class Statement
                 $this->prepare = $this->db->createReplace($this->table, $fields, $vHolder);
                 break;
             default:
-                throw new TableException('不应该到达这里,命令为:'.$this->operation,TableException::SHOULD_NOT_BE_HERE);
+                trigger_error('不识别的命令:' . $this->operation, E_USER_ERROR);
         }
 
         $this->params = $values;
@@ -641,7 +636,6 @@ class Statement
     /**
      * 具体生成crease相关数据
      * @return string
-     * @throws MysqlException
      */
     private function createCrease(): string
     {
@@ -672,7 +666,7 @@ class Statement
     /**
      * 具体生成Update的相关数据
      * @return string
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     private function createUpdate(): string
     {
@@ -687,7 +681,7 @@ class Statement
 
         // 更新时未指定条件
         if (!$whereSql) {
-            throw new TableException('Update操作必须指定查询条件,不允许全表修改',TableException::MISS_CONDITION_IN_UPDATE);
+            trigger_error('Update操作必须指定查询条件,不允许全表修改', E_USER_ERROR);
         }
 
         // 字段数组中的三项
@@ -723,7 +717,6 @@ class Statement
      * 具体 Delete的相关数据
      *
      * @return mixed
-     * @throws TableException|MysqlException
      */
     private function createDelete()
     {
@@ -735,7 +728,7 @@ class Statement
 
         // 更新时未指定条件
         if (!$condition) {
-            throw new TableException('Delete操作必须指定查询条件,不允许全表删除',TableException::MISS_CONDITION_IN_DELETE);
+            trigger_error('Delete操作必须指定查询条件,不允许全表删除', E_USER_ERROR);
         }
 
         // 生成三项

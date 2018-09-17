@@ -20,7 +20,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string|Table $table
      * @param array|null $data
-     * @throws TableException|MysqlException
      */
     public function __construct($table, ? array $data = null)
     {
@@ -35,7 +34,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param $where mixed
      * @return Row
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Row
     {
@@ -90,7 +89,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param string $linkMongoName
      * @param mixed $relation
      * @param array $fields
-     * @throws TableException|MongoException
      * @return Row
      */
     public function mapMongo($linkMongoName, $relation, array $fields = []): Row
@@ -107,7 +105,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 如果本表关联字段不存在
         if (!array_key_exists($field, $this->data)) {
-            throw new TableException('映射Mongo时,主表字段不存在:'.$field,TableException::MAP_MONGO_SOURCE_FIELD_NOT_EXISTS);
+            trigger_error('映射Mongo时,主表字段不存在:' . $field, E_USER_ERROR);
         }
 
         // 生成本表关联字段的所有值
@@ -163,7 +161,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Row
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Row
     {
@@ -200,7 +198,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param array $fields
      * @param mixed $where
      * @param mixed $sort
-     * @throws TableException|MongoException|\MongoCursorException|\MongoCursorTimeoutException|\MongoConnectionException
      * @return Row
      */
     public function joinMongo($linkMongoName, $relation, array $fields = [], $where = [], $sort = []): Row
@@ -217,7 +214,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 如果本表关联字段不存在
         if (!array_key_exists($field, $this->data)) {
-            throw new TableException('关联Mongo时,主表字段不存在:'.$field,TableException::JOIN_MONGO_SOURCE_FIELD_NOT_EXISTS);
+            trigger_error('关联Mongo时,主表字段不存在:' . $field, E_USER_ERROR);
         }
 
         // 生成本表关联字段的所有值
@@ -235,13 +232,24 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
         }
 
         // 生成查询游标
-        $cursor = $mongo->getCollection()->find($where, $fields)->sort($sort);
+        try {
+            $cursor = $mongo->getCollection()->find($where, $fields)->sort($sort);
+        } catch (\MongoCursorException $e) {
+            trigger_error('Mongo查询失败:' . $linkMongoName, E_USER_ERROR);
+            return $this;
+        }
 
         // 生成以关联表关联字段值为键的数组
         $linkResult = [];
-        while ($cursor->hasNext()) {
-            $row = $cursor->getNext();
-            $linkResult[] = $row;
+        try {
+            while ($cursor->hasNext()) {
+                $row = $cursor->getNext();
+                $linkResult[] = $row;
+            }
+        } catch (\MongoConnectionException $e) {
+            trigger_error('Mongo服务器连接失败:' . $linkMongoName, E_USER_ERROR);
+        } catch (\MongoCursorTimeoutException $e) {
+            trigger_error('Mongo游标读取超时:' . $linkMongoName, E_USER_ERROR);
         }
 
         $this->data[$linkMongoName] = $linkResult;
@@ -264,7 +272,7 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 调试模式报错,运行模式,返回一个空串
         if (isDebug()) {
-            throw new TableException('无法在行对象中找到指定的字段:'.$name,TableException::FIELD_NOT_EXISTS_IN_ROW);
+            throw new TableException('无法在行对象中找到指定的字段:' . $name, TableException::FIELD_NOT_EXISTS_IN_ROW);
         } else {
             return '';
         }

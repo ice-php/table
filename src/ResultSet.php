@@ -31,7 +31,6 @@ class ResultSet extends Result
      * SResultSet constructor.
      * @param string $tableName
      * @param array $data
-     * @throws MysqlException|TableException
      */
     public function __construct(string $tableName, array $data)
     {
@@ -68,7 +67,6 @@ class ResultSet extends Result
      * 实例化,由关联关系自动生成
      * @param Result $result 结果集
      * @return ResultSet
-     * @throws MysqlException|TableException
      */
     static public function instance(Result $result): ResultSet
     {
@@ -99,7 +97,7 @@ class ResultSet extends Result
     /**
      * 保存时,要每个行对象进行保存
      * 还要查看是否有需要删除的对象
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     public function save(): void
     {
@@ -156,7 +154,6 @@ class ResultSet extends Result
     /**
      * 从结果集中删除一个记录,以后save时会自动从数据库中删除
      * @param mixed $record
-     * @throws
      */
     public function remove(Record $record): void
     {
@@ -181,7 +178,7 @@ class ResultSet extends Result
                 } elseif (!is_array($r)) {
                     $deleted[] = $r;
                 } else {
-                    throw  new TableException('要移除的记录无法识别:' . json($r), TableException::WANT_REMOVE_UNKNOWN);
+                    trigger_error('要移除的记录无法识别:' . json($r), E_USER_ERROR);
                 }
             }
         }

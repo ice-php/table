@@ -33,7 +33,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string $tableName
      * @param array $data
-     * @throws MysqlException|TableException
      */
     public function __construct(string $tableName, array $data)
     {
@@ -46,7 +45,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
     /**
      * 行数据转换成行对象
-     * @throws TableException|MysqlException
      */
     private function row2Obj(): void
     {
@@ -151,7 +149,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param mixed $where
      * @return Result
-     * @throws MysqlException|TableException
+     * @throws MysqlException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Result
     {
@@ -204,7 +202,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $relation 对应关系(本表字段=>要连接的表的字段)
      * @param array $fields 目标表的字段,取出,使用
      * @return Result
-     * @throws MongoException|TableException|MysqlException|\MongoConnectionException|\MongoCursorTimeoutException
      */
     public function mapMongo(string $linkMongoName, $relation, array $fields = []): Result
     {
@@ -242,9 +239,15 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 生成以关联表关联字段值为键的数组
         $linkResult = [];
-        while ($cursor->hasNext()) {
-            $row = $cursor->getNext();
-            $linkResult[$row[$linkField]] = $row;
+        try {
+            while ($cursor->hasNext()) {
+                $row = $cursor->getNext();
+                $linkResult[$row[$linkField]] = $row;
+            }
+        }catch (\MongoConnectionException $e){
+            trigger_error('Mongo服务器连接失败:'.$linkMongoName,E_USER_ERROR);
+        }catch (\MongoCursorTimeoutException $e){
+            trigger_error('Mongo游标读取超时:'.$linkMongoName,E_USER_ERROR);
         }
 
         // 为本表每行数据补充字段
@@ -277,7 +280,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {
@@ -346,7 +349,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $sort
      * @return Result
-     * @throws MongoException|TableException|\MongoCursorException|\MongoCursorTimeoutException|\MongoConnectionException|MysqlException
      */
     public function joinMongo(string $linkMongoName, $relation, array $fields = [], $where = [], $sort = []): Result
     {
@@ -379,18 +381,31 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
         }
 
         // 生成查询游标
-        $cursor = $mongo->getCollection()->find($where, $fields)->sort($sort);
+        try {
+            $cursor = $mongo->getCollection()->find($where, $fields)->sort($sort);
+        }catch (\MongoCursorException $e){
+            trigger_error('Mongo查询失败:'.$linkMongoName,E_USER_ERROR);
+            return $this;
+        }
 
         // 生成以关联表关联字段值为键的数组
         $linkResult = [];
-        while ($cursor->hasNext()) {
-            $row = $cursor->getNext();
-            $key = $row[$linkField];
-            if (!array_key_exists($key, $linkResult)) {
-                $linkResult[$key] = [];
+
+        try {
+            while ($cursor->hasNext()) {
+                $row = $cursor->getNext();
+                $key = $row[$linkField];
+                if (!array_key_exists($key, $linkResult)) {
+                    $linkResult[$key] = [];
+                }
+                $linkResult[$key][] = $row;
             }
-            $linkResult[$key][] = $row;
+        }catch (\MongoConnectionException $e){
+            trigger_error('Mongo服务器连接失败:'.$linkMongoName,E_USER_ERROR);
+        }catch (\MongoCursorTimeoutException $e){
+            trigger_error('Mongo游标读取超时:'.$linkMongoName,E_USER_ERROR);
         }
+
 
         // 转换每个值对应的结果为结果集对象
         foreach ($linkResult as $k => $v) {
@@ -492,7 +507,7 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws TableException|MysqlException
+     * @throws MysqlException
      */
     private function mapGroup($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {
