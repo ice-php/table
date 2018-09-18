@@ -44,7 +44,6 @@ abstract class Record
     /**
      * 使用给定数据创建一个当前表的行对象
      * @param array|Row $data
-     * @throws MysqlException
      */
     public function __construct($data = null)
     {
@@ -61,7 +60,6 @@ abstract class Record
      * 批量设置记录值
      * @param $data mixed 可以是SRow,Array,或主键
      * @return $this
-     * @throws MysqlException
      */
     public function set($data): Record
     {
@@ -144,7 +142,6 @@ abstract class Record
 
     /**
      * 删除 当前记录
-     * @throws MysqlException
      */
     public function remove(): void
     {
@@ -202,7 +199,6 @@ abstract class Record
     /**
      * 保存数据
      * @return $this
-     * @throws MysqlException
      */
     public function save(): Record
     {
@@ -245,7 +241,6 @@ abstract class Record
     /**
      * 根据当前数据作为条件,进行查询(一行)
      * @return $this
-     * @throws MysqlException
      */
     private function loadByData(): Record
     {
@@ -258,7 +253,6 @@ abstract class Record
      * 根据主键进行查询(一行)
      * @param $pk mixed
      * @return $this
-     * @throws MysqlException
      */
     private function loadByPk($pk): Record
     {
@@ -271,7 +265,6 @@ abstract class Record
      * 根据条件进行查询
      * @param array $where 查询条件
      * @return $this
-     * @throws MysqlException
      */
     private function loadByWhere(array $where): Record
     {
@@ -290,7 +283,6 @@ abstract class Record
      * 从库中读取数据
      * @param  $pk mixed 可以指定主键,也可以是条件
      * @return $this
-     * @throws TableException|MysqlException
      */
     public function load($pk = null): Record
     {
@@ -301,7 +293,7 @@ abstract class Record
         } elseif ($this->_data) {
             $this->loadByData();
         } else {
-            throw new TableException('加载行记录对象时参数错误:'.json($pk),TableException::RECORD_LOAD_ERROR);
+            trigger_error('加载行记录对象时参数错误:'.json($pk),E_USER_ERROR);
         }
 
         //保存原始数据
@@ -399,7 +391,6 @@ abstract class Record
 
     /**
      * 查看关联子对象,进行递归保存
-     * @throws MysqlException
      */
     private function saveRelation(): void
     {
@@ -420,7 +411,6 @@ abstract class Record
      * 当读取一个不存在的属性时,检查是否是关联对象(懒加载)
      * @param $name string 属性名
      * @return Record|ResultSet 可能是一行或一个结果集
-     * @throws TableException|MysqlException
      */
     public function __get(string $name)
     {
@@ -435,14 +425,14 @@ abstract class Record
             }
         }
 
-        throw new TableException('字段不存在:'.$name,TableException::FIELD_NOT_EXISTS);
+        trigger_error('字段不存在:'.$name,E_USER_ERROR);
+        return null;
     }
 
     /**
      * 获取一对一子对象的值
      * @param array $config 配置信息
      * @return Record 结果行对象
-     * @throws MysqlException
      */
     private function _hasOne(array $config): Record
     {
@@ -473,7 +463,6 @@ abstract class Record
      * 获取一对多子对象的值
      * @param array $config 配置信息
      * @return ResultSet 结果集对象
-     * @throws MysqlException
      */
     private function _hasMany(array $config): ResultSet
     {
@@ -500,7 +489,6 @@ abstract class Record
      * 获取多对一子对象的值
      * @param array $config 配置信息
      * @return Record 结果行对象
-     * @throws MysqlException
      */
     private function _belongsTo(array $config): Record
     {
@@ -530,7 +518,6 @@ abstract class Record
      * 获取一对多子对象的值
      * @param array $config 配置信息
      * @return ResultSet 结果集对象
-     * @throws MysqlException
      */
     private function _belongsToMany(array $config): ResultSet
     {

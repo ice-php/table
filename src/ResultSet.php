@@ -97,7 +97,6 @@ class ResultSet extends Result
     /**
      * 保存时,要每个行对象进行保存
      * 还要查看是否有需要删除的对象
-     * @throws MysqlException
      */
     public function save(): void
     {

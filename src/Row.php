@@ -34,7 +34,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param $where mixed
      * @return Row
-     * @throws MysqlException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Row
     {
@@ -161,7 +160,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Row
-     * @throws MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Row
     {
@@ -262,7 +260,6 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      *
      * @param string $name 字段名或别名
      * @return mixed 字段的值
-     * @throws TableException
      */
     public function __get(string $name)
     {
@@ -272,10 +269,9 @@ class Row implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
 
         // 调试模式报错,运行模式,返回一个空串
         if (isDebug()) {
-            throw new TableException('无法在行对象中找到指定的字段:' . $name, TableException::FIELD_NOT_EXISTS_IN_ROW);
-        } else {
-            return '';
+            trigger_error('无法在行对象中找到指定的字段:' . $name, E_USER_ERROR);
         }
+        return '';
     }
 
     /**

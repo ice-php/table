@@ -149,7 +149,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $fields
      * @param mixed $where
      * @return Result
-     * @throws MysqlException
      */
     public function map($linkTableName, $relation, $fields = '*', $where = []): Result
     {
@@ -280,7 +279,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws MysqlException
      */
     public function join($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {
@@ -507,7 +505,6 @@ class Result implements \IteratorAggregate, \ArrayAccess, \JsonSerializable
      * @param mixed $where
      * @param mixed $orderBy
      * @return Result
-     * @throws MysqlException
      */
     private function mapGroup($linkTableName, $relation, $fields = '*', $where = [], $orderBy = ''): Result
     {
