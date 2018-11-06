@@ -41,6 +41,9 @@ abstract class Record
      */
     protected $_table;
 
+    //表区县的所有字段数据类型
+    protected static $_fieldsType;
+
     /**
      * 使用给定数据创建一个当前表的行对象
      * @param array|Row $data
@@ -83,7 +86,15 @@ abstract class Record
         //将原始值赋值给属性
         if ($data) {
             foreach ($this->_data as $k => $v) {
-                $this->$k = $v;
+                //根据类型赋值
+                $type = static::$_fieldsType[$k];
+                if ($type == 'int') {
+                    $this->$k = intval($v);
+                } elseif ($type == 'float') {
+                    $this->$k = floatval($v);
+                } else {
+                    $this->$k = strval($v);
+                }
             }
         }
         return $this;
@@ -293,7 +304,7 @@ abstract class Record
         } elseif ($this->_data) {
             $this->loadByData();
         } else {
-            trigger_error('加载行记录对象时参数错误:'.json($pk),E_USER_ERROR);
+            trigger_error('加载行记录对象时参数错误:' . json($pk), E_USER_ERROR);
         }
 
         //保存原始数据
@@ -425,7 +436,7 @@ abstract class Record
             }
         }
 
-        trigger_error('字段不存在:'.$name,E_USER_ERROR);
+        trigger_error('字段不存在:' . $name, E_USER_ERROR);
         return null;
     }
 
