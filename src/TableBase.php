@@ -339,7 +339,7 @@ abstract class TableBase
         }
 
         // 输出调试信息:执行时间
-        Debug::setSql('Execute', $prepare, $interval, $params, $statement->getSql());
+        Debug::setSql('Execute', $prepare, $interval*1000, $params, $statement->getSql());
 
         return boolval($result);
     }
@@ -395,7 +395,7 @@ abstract class TableBase
         FileLog::instance()->sqlAfter('afterQuery', $statement->getSql(), $result, $interval, $statement->getOperation());
 
         // 记录调试信息
-        Debug::setSql('Query', $prepare, $interval, $params, $statement->getSql());
+        Debug::setSql('Query', $prepare, $interval*1000, $params, $statement->getSql());
         return $result;
     }
 
@@ -441,7 +441,7 @@ abstract class TableBase
         // 记录耗时
         FileLog::instance()->sqlAfter('afterQueryHandle', $statement->getSql(), $result, $interval, $statement->getOperation());
 
-        Debug::setSql('QueryHandle', $prepare, $interval, $params, $statement->getSql());
+        Debug::setSql('QueryHandle', $prepare, $interval*1000, $params, $statement->getSql());
         return $result;
     }
 
