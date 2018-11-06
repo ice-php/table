@@ -336,10 +336,10 @@ abstract class TableBase
         // 记录耗时
         if (!$noLog) {
             FileLog::instance()->sqlAfter('afterExecute', $statement->getSql(), $result, $interval, $statement->getOperation());
-        }
 
-        // 输出调试信息:执行时间
-        Debug::setSql('Execute', $prepare, $interval*1000, $params, $statement->getSql());
+            // 输出调试信息:执行时间
+            Debug::setSql('Execute', $prepare, $interval*1000, $params, $statement->getSql());
+        }
 
         return boolval($result);
     }
