@@ -577,7 +577,8 @@ abstract class TableBase
         if (!$ret) {
             trigger_error('PDO语句参数绑定错误:' . $stmt->errorCode(), E_USER_ERROR);
         }
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $result;
     }
 
     /**

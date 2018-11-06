@@ -32,6 +32,9 @@ class Table extends TableCached
      */
     protected static $handle;
 
+    //当前表的所有字段数据类型
+    protected static $_fieldsType;
+
     /**
      * 获取单例句柄,返回具体模型类的实例对象
      */

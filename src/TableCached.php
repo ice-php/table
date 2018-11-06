@@ -353,7 +353,6 @@ abstract class TableCached extends TableBase
             return [];
         }
 
-
         // 取出语句的SQL,用于日志
         $sql = $this->statement->getSql();
 
