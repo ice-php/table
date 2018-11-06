@@ -41,7 +41,7 @@ abstract class Record
      */
     protected $_table;
 
-    //表区县的所有字段数据类型
+    //当前表的所有字段数据类型
     protected static $_fieldsType;
 
     /**
@@ -318,7 +318,15 @@ abstract class Record
         //将原始值赋值给属性
         if ($this->_data) {
             foreach ($this->_data as $k => $v) {
-                $this->$k = $v;
+                //根据类型赋值
+                $type = static::$_fieldsType[$k];
+                if ($type == 'int') {
+                    $this->$k = intval($v);
+                } elseif ($type == 'float') {
+                    $this->$k = floatval($v);
+                } else {
+                    $this->$k = strval($v);
+                }
             }
         }
         return $this;
