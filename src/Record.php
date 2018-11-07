@@ -92,6 +92,8 @@ abstract class Record
                     $this->$k = intval($v);
                 } elseif ($type == 'float') {
                     $this->$k = floatval($v);
+                } elseif ($type == 'bool') {
+                    $this->$k = boolval($v);
                 } else {
                     $this->$k = strval($v);
                 }
@@ -324,6 +326,8 @@ abstract class Record
                     $this->$k = intval($v);
                 } elseif ($type == 'float') {
                     $this->$k = floatval($v);
+                } elseif ($type == 'bool') {
+                    $this->$k = boolval($v);
                 } else {
                     $this->$k = strval($v);
                 }
