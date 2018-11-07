@@ -41,9 +41,6 @@ abstract class Record
      */
     protected $_table;
 
-    //当前表的所有字段数据类型
-    protected static $_fieldsType;
-
     /**
      * 使用给定数据创建一个当前表的行对象
      * @param array|Row $data
@@ -86,17 +83,7 @@ abstract class Record
         //将原始值赋值给属性
         if ($data) {
             foreach ($this->_data as $k => $v) {
-                //根据类型赋值
-                $type = static::$_fieldsType[$k];
-                if ($type == 'int') {
-                    $this->$k = intval($v);
-                } elseif ($type == 'float') {
-                    $this->$k = floatval($v);
-                } elseif ($type == 'bool') {
-                    $this->$k = boolval($v);
-                } else {
-                    $this->$k = strval($v);
-                }
+                $this->$k = $v;
             }
         }
         return $this;
@@ -320,17 +307,7 @@ abstract class Record
         //将原始值赋值给属性
         if ($this->_data) {
             foreach ($this->_data as $k => $v) {
-                //根据类型赋值
-                $type = static::$_fieldsType[$k];
-                if ($type == 'int') {
-                    $this->$k = intval($v);
-                } elseif ($type == 'float') {
-                    $this->$k = floatval($v);
-                } elseif ($type == 'bool') {
-                    $this->$k = boolval($v);
-                } else {
-                    $this->$k = strval($v);
-                }
+                $this->$k = $v;
             }
         }
         return $this;
