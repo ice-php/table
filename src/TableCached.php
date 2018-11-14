@@ -401,7 +401,7 @@ abstract class TableCached extends TableBase
         $data = $cache->get($sql);
 
         // 找到(无法缓存false,null)
-        if ($data and $data !== CacheFactory::NOT_FOUND) {
+        if ($data and  $data !== CacheFactory::NOT_FOUND) {
             $this->returnFromCache = true;
             return $data;
         }
