@@ -395,7 +395,7 @@ abstract class TableCached extends TableBase
         }
 
         // 这句是用来载入类文件的
-        $cache = CacheFactory::instance($this->cacheType);
+        $cache = CacheFactory::createByType($this->cacheType);
 
         // 从缓存中取
         $data = $cache->get($sql);
@@ -727,7 +727,7 @@ abstract class TableCached extends TableBase
 
         // 如果可以解析表名 清除相关缓存
         if ($tables and count($tables)) {
-            $cache = CacheFactory::instance($this->cacheType);
+            $cache = CacheFactory::createByType($this->cacheType);
 
             // 清除相关表中的所有缓存.因为可能影响到
             foreach ($tables as $name) {
