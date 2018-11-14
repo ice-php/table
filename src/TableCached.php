@@ -30,25 +30,50 @@ abstract class TableCached extends TableBase
     // 包含所有钩子相关代码
     use TableHook;
 
-    // 本表是否强制要求文件缓存
-    private $fileCache = false;
+    // 本表缓存类型
+    private $cacheType = null;
 
     /**
      * 根据表的别名构造表对象,同时构造语句对象
      *
      * @param string $alias 表别名
-     * @param $fileCache bool 是否要对本表进行文件缓存
+     * @param string $cacheType 缓存类型
      */
-    protected function __construct(string $alias, bool $fileCache = false)
+    protected function __construct(string $alias, ?string $cacheType = null)
     {
         // 调用父类的构造方法
         parent::__construct($alias);
 
         // 设置是否文件缓存
-        $this->fileCache = $fileCache;
+        $this->cacheType = $cacheType ?: self::getCacheConfig($alias);
 
         // 先初始化一下语句
         $this->clear();
+    }
+
+    /**
+     * 获取指定表的缓存类型
+     * @param string $alias 表别名
+     * @return null|string 缓存类型:mem/apc/redis/file/none
+     */
+    private function getCacheConfig(string $alias): ?string
+    {
+        //读配置文件 ,可以不指定
+        $config = configDefault([], 'tablecache');
+        foreach ($config as $type => $tables) {
+            if ($tables == $alias) {
+                return $type;
+            }
+
+            if (is_array($tables)) {
+                foreach ($tables as $table) {
+                    if ($table == $alias) {
+                        return $type;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /**
@@ -57,17 +82,17 @@ abstract class TableCached extends TableBase
      * 导致本方法不能使用instance作为方法名
      *
      * @param string $alias
-     * @param bool $fileCache
+     * @param string $cacheType
      * @return Table      注:就是Table,而不是TableCache
      */
-    static public function getInstance(string $alias, bool $fileCache = false): Table
+    static public function getInstance(string $alias, ?string $cacheType = null): Table
     {
         // 保存每个表对象
         static $tables = [];
 
         // 如果尚未创建,则创建并缓存
         if (!isset($tables[$alias])) {
-            $tables[$alias] = new static($alias, $fileCache);
+            $tables[$alias] = new static($alias, $cacheType);
         }
 
         // 返回缓存后的表对象
@@ -84,7 +109,7 @@ abstract class TableCached extends TableBase
      * 清除所有预保存参数,用于各种操作完成后
      * 实际上是重新生成一个空的语句对象
      */
-    private function clear(): TableCached
+    private function clear(): self
     {
         $this->statement = new Statement($this->tableName);
         return $this;
@@ -96,7 +121,7 @@ abstract class TableCached extends TableBase
      * @param mixed $on 关联条件
      * @return $this
      */
-    public function join($join, $on = null): TableCached
+    public function join($join, $on = null): self
     {
         return $this->innerJoin($join, $on);
     }
@@ -107,7 +132,7 @@ abstract class TableCached extends TableBase
      * @param mixed $on 关联条件
      * @return $this
      */
-    public function leftJoin($join, $on = null): TableCached
+    public function leftJoin($join, $on = null): self
     {
         $this->statement->join('left', $join, $on);
         return $this;
@@ -131,7 +156,7 @@ abstract class TableCached extends TableBase
      * @param mixed $on 关联条件
      * @return $this
      */
-    public function innerJoin($join, $on = null): TableCached
+    public function innerJoin($join, $on = null): self
     {
         $this->statement->join('inner', $join, $on);
         return $this;
@@ -143,7 +168,7 @@ abstract class TableCached extends TableBase
      * @param mixed $on 关联条件
      * @return $this
      */
-    public function outerJoin($join, $on = null): TableCached
+    public function outerJoin($join, $on = null): self
     {
         $this->statement->join('outer', $join, $on);
         return $this;
@@ -154,7 +179,7 @@ abstract class TableCached extends TableBase
      * @param $on mixed 关联条件
      * @return $this
      */
-    public function on($on): TableCached
+    public function on($on): self
     {
         $this->statement->on($on);
         return $this;
@@ -163,7 +188,7 @@ abstract class TableCached extends TableBase
     /**
      * 设置本次查询要进行唯一过滤
      */
-    public function distinct(): TableCached
+    public function distinct(): self
     {
         $this->statement->distinct = true;
         return $this;
@@ -174,7 +199,7 @@ abstract class TableCached extends TableBase
      * @param $fields mixed
      * @return $this
      */
-    public function fields($fields): TableCached
+    public function fields($fields): self
     {
         $this->statement->fields = $fields;
         return $this;
@@ -185,7 +210,7 @@ abstract class TableCached extends TableBase
      * @param $where mixed
      * @return $this
      */
-    public function where($where): TableCached
+    public function where($where): self
     {
         $this->statement->where = $where;
         return $this;
@@ -196,7 +221,7 @@ abstract class TableCached extends TableBase
      * @param $orderBy mixed
      * @return $this
      */
-    public function orderBy($orderBy): TableCached
+    public function orderBy($orderBy): self
     {
         $this->statement->orderBy = $orderBy;
         return $this;
@@ -207,7 +232,7 @@ abstract class TableCached extends TableBase
      * @param $groupBy mixed
      * @return $this
      */
-    public function groupBy($groupBy): TableCached
+    public function groupBy($groupBy): self
     {
         $this->statement->groupBy = $groupBy;
         return $this;
@@ -218,7 +243,7 @@ abstract class TableCached extends TableBase
      * @param $having mixed
      * @return $this
      */
-    public function having($having): TableCached
+    public function having($having): self
     {
         $this->statement->having = $having;
         return $this;
@@ -229,7 +254,7 @@ abstract class TableCached extends TableBase
      * @param $limit mixed
      * @return $this
      */
-    public function limit($limit): TableCached
+    public function limit($limit): self
     {
         $this->statement->limit = $limit;
         return $this;
@@ -241,7 +266,7 @@ abstract class TableCached extends TableBase
     /**
      * 临时禁止缓存,只禁止一次
      */
-    public function disableCache(): TableCached
+    public function disableCache(): self
     {
         $this->temporaryUnCache = true;
         return $this;
@@ -252,8 +277,8 @@ abstract class TableCached extends TableBase
      */
     private function enabled(): bool
     {
-        // 如果本表强制要求文件缓存
-        if ($this->fileCache) {
+        // 如果本表要求缓存
+        if ($this->cacheType) {
             return true;
         }
 
@@ -264,8 +289,7 @@ abstract class TableCached extends TableBase
             return false;
         }
 
-        // 检查缓存是否开启
-        return cache('Data')->enabled();
+        return true;
     }
 
     /**
@@ -371,10 +395,7 @@ abstract class TableCached extends TableBase
         }
 
         // 这句是用来载入类文件的
-        $cache = cache('Data');
-        if ($this->fileCache) {
-            $cache = CacheFile::instance();
-        }
+        $cache = CacheFactory::instance($this->cacheType);
 
         // 从缓存中取
         $data = $cache->get($sql);
@@ -706,11 +727,7 @@ abstract class TableCached extends TableBase
 
         // 如果可以解析表名 清除相关缓存
         if ($tables and count($tables)) {
-            if ($this->fileCache) {
-                $cache = CacheFile::instance();
-            } else {
-                $cache = cache('Data');
-            }
+            $cache = CacheFactory::instance($this->cacheType);
 
             // 清除相关表中的所有缓存.因为可能影响到
             foreach ($tables as $name) {
@@ -727,8 +744,7 @@ abstract class TableCached extends TableBase
      * @param array $row
      * @return array
      */
-    private
-    function appendAutoField(array $row): array
+    private function appendAutoField(array $row): array
     {
         // 如果不允许自动附加两个字段的话
         if (!$this->enableAutoField()) {

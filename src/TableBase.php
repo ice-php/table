@@ -220,7 +220,7 @@ abstract class TableBase
      * @param $level string read|write
      * @return TableBase
      */
-    public function lock(string $level = 'write'): TableBase
+    public function lock(string $level = 'write'): self
     {
         //读/写模式
         $level = strtolower($level);
@@ -236,7 +236,7 @@ abstract class TableBase
      * 解除表锁
      * @return TableBase
      */
-    public function unlock(): TableBase
+    public function unlock(): self
     {
         $this->db->unlock($this->tableName);
         return $this;
