@@ -895,7 +895,7 @@ abstract class TableCached extends TableBase
         //判断插入是否成功
         if ($id) {
             //重新取出插入的数据
-            $after = $this->select2('*', $id);
+            $after = $this->select2('*', $id,null,1);
 
             //记录日志
             call_user_func($operationLog, $this->tableName, 'insert', ['data' => $row, 'after' => $after]);
