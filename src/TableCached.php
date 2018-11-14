@@ -277,9 +277,9 @@ abstract class TableCached extends TableBase
      */
     private function enabled(): bool
     {
-        // 如果本表要求缓存
-        if ($this->cacheType) {
-            return true;
+        // 如果本表不要求缓存
+        if (!$this->cacheType) {
+            return false;
         }
 
         // 如果已经临时禁止了缓存
@@ -400,8 +400,8 @@ abstract class TableCached extends TableBase
         // 从缓存中取
         $data = $cache->get($sql);
 
-        // 找到
-        if ($data !== CacheFactory::NOT_FOUND) {
+        // 找到(无法缓存false,null)
+        if ($data and $data !== CacheFactory::NOT_FOUND) {
             $this->returnFromCache = true;
             return $data;
         }
