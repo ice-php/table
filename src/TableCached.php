@@ -1196,7 +1196,7 @@ abstract class TableCached extends TableBase
      * @param float $diff 增加或减少的数值
      * @return int|false 影响的行数
      */
-    private function crease(string $operator = '+', $fields, $where, float $diff): int
+    private function crease(string $operator, $fields, $where, float $diff): int
     {
         // 执行前置钩子
         $ret = $this->before('Crease', $operator, $fields, $where, $diff);
