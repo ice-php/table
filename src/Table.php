@@ -160,6 +160,7 @@ class Table extends TableCached
     public function meta(string $name = ''): array
     {
         // 取得查询结果
+        $this->disableCache();
         $meta = $this->getMeta($name);
 
         // 对结果进行修正
