@@ -310,10 +310,11 @@ abstract class TableBase
         $prepare = $statement->getPrepare();
         $params = $statement->getParams();
 
-        $noLog = in_array($this->tableName, configDefault([], 'log', 'noLogTables'));
+        //是否需要记录日志
+        $logEnabled = $this->logEnabled();
 
         //先记录日志,以免出错崩溃
-        if (!$noLog) {
+        if ($logEnabled) {
             FileLog::instance()->sqlBefore('execute', $statement->getSql());
         }
 
@@ -334,11 +335,11 @@ abstract class TableBase
         $interval = timeLog($begin);
 
         // 记录耗时
-        if (!$noLog) {
+        if ($logEnabled) {
             FileLog::instance()->sqlAfter('afterExecute', $statement->getSql(), $result, $interval, $statement->getOperation());
 
             // 输出调试信息:执行时间
-            Debug::setSql('Execute', $prepare, $interval*1000, $params, $statement->getSql());
+            Debug::setSql('Execute', $prepare, $interval * 1000, $params, $statement->getSql());
         }
 
         return boolval($result);
@@ -373,8 +374,13 @@ abstract class TableBase
         $prepare = $statement->getPrepare();
         $params = $statement->getParams();
 
-        //记录查询日志
-        FileLog::instance()->sqlBefore('query', $statement->getSql());
+        //是否需要记录日志
+        $logEnabled = $this->logEnabled();
+
+        //先记录日志,以免出错崩溃
+        if ($logEnabled) {
+            FileLog::instance()->sqlBefore('query', $statement->getSql());
+        }
 
         // 从读服务器进行读操作
         $connect = $this->connectRead();
@@ -391,11 +397,14 @@ abstract class TableBase
         // 计算耗时
         $interval = timeLog($begin);
 
-        // 记录耗时
-        FileLog::instance()->sqlAfter('afterQuery', $statement->getSql(), $result, $interval, $statement->getOperation());
+        //如果需要记录日志
+        if ($logEnabled) {
+            // 记录耗时
+            FileLog::instance()->sqlAfter('afterQuery', $statement->getSql(), $result, $interval, $statement->getOperation());
 
-        // 记录调试信息
-        Debug::setSql('Query', $prepare, $interval*1000, $params, $statement->getSql());
+            // 记录调试信息
+            Debug::setSql('Query', $prepare, $interval * 1000, $params, $statement->getSql());
+        }
         return $result;
     }
 
@@ -441,7 +450,7 @@ abstract class TableBase
         // 记录耗时
         FileLog::instance()->sqlAfter('afterQueryHandle', $statement->getSql(), $result, $interval, $statement->getOperation());
 
-        Debug::setSql('QueryHandle', $prepare, $interval*1000, $params, $statement->getSql());
+        Debug::setSql('QueryHandle', $prepare, $interval * 1000, $params, $statement->getSql());
         return $result;
     }
 
@@ -494,7 +503,7 @@ abstract class TableBase
 
         // 如果事务层次没了,不应该提交
         if (self::$transaction <= 0) {
-            trigger_error('不允许单独的事务提交(缺少事务开始)',E_USER_ERROR);
+            trigger_error('不允许单独的事务提交(缺少事务开始)', E_USER_ERROR);
         }
 
         // 嵌套层次减少
@@ -511,7 +520,7 @@ abstract class TableBase
     {
         // 允许多库时,无法回滚
         if (self::enableMulti()) {
-            trigger_error('允许多表查询情况下无法使用事务:database/_enable_multi',E_USER_ERROR);
+            trigger_error('允许多表查询情况下无法使用事务:database/_enable_multi', E_USER_ERROR);
         }
 
         // 嵌套层次没了
