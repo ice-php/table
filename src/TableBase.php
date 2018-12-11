@@ -608,12 +608,4 @@ abstract class TableBase
         }
         return $ret;
     }
-
-    /**
-     * 返回原始数据库连接
-     * @return \PDO
-     */
-    public function getConnection(){
-        return $this->connectWrite();
-    }
 }
