@@ -77,6 +77,16 @@ abstract class TableBase
     }
 
     /**
+     * 关闭数据库连接,下次重新连接
+     * @return self
+     */
+    public function closeConnection():self
+    {
+        $this->db = new Mysql();
+        return $this;
+    }
+
+    /**
      * 查看是否允许多表关联访问
      * @return boolean
      */
