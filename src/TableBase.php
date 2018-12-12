@@ -77,16 +77,6 @@ abstract class TableBase
     }
 
     /**
-     * 关闭数据库连接,下次重新连接
-     * @return self
-     */
-    public function closeConnection():self
-    {
-        $this->db = new Mysql();
-        return $this;
-    }
-
-    /**
      * 查看是否允许多表关联访问
      * @return boolean
      */
@@ -128,12 +118,13 @@ abstract class TableBase
             return $this->connectWrite();
         }
 
-        // 如果已经连接,直接返回句柄
-        if (!$this->handleRead) {
-            // 获取连接句柄
-            $this->handleRead = $this->db->connect($this->alias, 'read');
+        //如果已经有缓存
+        if ($this->handleRead) {
+            return $this->handleRead;
         }
-        return $this->handleRead;
+
+        // 获取连接句柄
+        return $this->handleRead = $this->db->connect($this->alias, 'read');
     }
 
     /**
@@ -145,8 +136,12 @@ abstract class TableBase
      */
     private function connectWrite(): \PDO
     {
-        $this->handleWrite = $this->db->connect($this->alias, 'write');
-        return $this->handleWrite;
+        if ($this->handleWrite) {
+            return $this->handleWrite;
+        }
+
+        //获取连接句柄
+        return $this->handleWrite = $this->db->connect($this->alias, 'write');
     }
 
     /**
