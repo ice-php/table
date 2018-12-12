@@ -118,11 +118,6 @@ abstract class TableBase
             return $this->connectWrite();
         }
 
-        //如果已经有缓存
-        if ($this->handleRead) {
-            return $this->handleRead;
-        }
-
         // 获取连接句柄
         return $this->handleRead = $this->db->connect($this->alias, 'read');
     }
@@ -136,10 +131,6 @@ abstract class TableBase
      */
     private function connectWrite(): \PDO
     {
-        if ($this->handleWrite) {
-            return $this->handleWrite;
-        }
-
         //获取连接句柄
         return $this->handleWrite = $this->db->connect($this->alias, 'write');
     }
